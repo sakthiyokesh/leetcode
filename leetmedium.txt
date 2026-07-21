@@ -1,0 +1,318 @@
+			LEETCODE - MEDIUM PROBLEMS
+
+
+
+1. INSERTION SORT
+
+class Solution(object):
+    def insertionSortList(self, head):
+        if not head or not head.next:
+            return head
+        dummy = ListNode(-float('inf'))
+        dummy.next = head
+        cur = head
+        while cur and cur.next:
+            if cur.next.val >= cur.val:
+                cur = cur.next
+            else:
+                tmp = cur.next
+                cur.next = tmp.next
+                pre = dummy
+                while pre.next.val < tmp.val:
+                    pre = pre.next
+                tmp.next = pre.next
+                pre.next = tmp
+        return dummy.next
+
+2.349. Intersection of Two Arrays
+
+class Solution:
+    def intersection(self, nums1: list[int], nums2: list[int]) -> list[int]:
+        set1 = set(nums1)
+        result = set()
+    
+        for num in nums2:
+            if num in set1:
+                result.add(num)
+                
+        return list(result)
+
+4. 539. Minimum Time Difference
+
+class Solution:
+    def findMinDifference(self, timePoints: list[str]) -> int:
+
+        if len(timePoints) > 1440:
+            return 0
+            
+       
+        minutes_list = []
+        for time in timePoints:
+            hours, mins = map(int, time.split(':'))
+            minutes_list.append(hours * 60 + mins)
+            
+      
+        minutes_list.sort()
+        
+        
+        min_diff = float('inf')
+        for i in range(1, len(minutes_list)):
+            min_diff = min(min_diff, minutes_list[i] - minutes_list[i-1])
+   
+        wrap_around_diff = (1440 - minutes_list[-1]) + minutes_list[0]
+        min_diff = min(min_diff, wrap_around_diff)
+        
+        return min_diff
+
+sol = Solution()
+
+print(sol.findMinDifference(["23:59", "00:00"]))          
+
+
+
+print(sol.findMinDifference(["00:00", "23:59", "00:00"])) 
+
+5. 611. Valid Triangle Number
+
+class Solution:
+    def triangleNumber(self, nums: list[int]) -> int:
+       
+        nums.sort()
+        count = 0
+        n = len(nums)
+        
+       
+        for i in range(n - 1, 1, -1):
+            left = 0
+            right = i - 1
+            
+
+            while left < right:
+         
+                if nums[left] + nums[right] > nums[i]:
+
+                    count += (right - left)
+                  
+                    right -= 1
+                else:
+                 
+                    left += 1
+                    
+        return count
+
+sol = Solution()
+
+
+print(sol.triangleNumber([2, 2, 3, 4]))  
+
+
+print(sol.triangleNumber([4, 2, 3, 4]))  
+
+
+6.75. Sort Colors
+
+
+class Solution:
+    def sortColors(self, nums: list[int]) -> None:
+        """
+        Do not return anything, modify nums in-place instead.
+        """
+        low = 0
+        mid = 0
+        high = len(nums) - 1
+    
+        while mid <= high:
+            if nums[mid] == 0:
+               
+                nums[low], nums[mid] = nums[mid], nums[low]
+                low += 1
+                mid += 1
+            elif nums[mid] == 1:
+
+                mid += 1
+            else:
+           
+                nums[mid], nums[high] = nums[high], nums[mid]
+                high -= 1
+
+
+sol = Solution()
+
+
+test1 = [2, 0, 2, 1, 1, 0]
+sol.sortColors(test1)
+print(test1)  
+
+
+test2 = [2, 0, 1]
+sol.sortColors(test2)
+print(test2)  
+
+
+7.1202. Smallest String With Swaps
+
+
+from collections import defaultdict
+
+class Solution:
+    def smallestStringWithSwaps(self, s: str, pairs: list[list[int]]) -> str:
+        parent = list(range(len(s)))
+        
+        def find(i: int) -> int:
+            if parent[i] == i:
+                return i
+            parent[i] = find(parent[i])
+            return parent[i]
+            
+        def union(i: int, j: int) -> None:
+            root_i = find(i)
+            root_j = find(j)
+            if root_i != root_j:
+                parent[root_i] = root_j
+
+        for u, v in pairs:
+            union(u, v)
+            
+        components = defaultdict(list)
+        for i in range(len(s)):
+            components[find(i)].append(i)
+            
+        s_list = list(s)
+        for indices in components.values():
+            characters = [s[i] for i in indices]
+            characters.sort()
+            for idx, char in zip(indices, characters):
+                s_list[idx] = char
+                
+        return "".join(s_list)
+
+
+8.1329. Sort the Matrix Diagonally
+
+from collections import defaultdict
+
+class Solution:
+    def diagonalSort(self, mat: list[list[int]]) -> list[list[int]]:
+        m = len(mat)
+        n = len(mat[0])
+        diagonals = defaultdict(list)
+        
+        for r in range(m):
+            for c in range(n):
+                diagonals[r - c].append(mat[r][c])
+                
+        for d in diagonals:
+            diagonals[d].sort(reverse=True)
+            
+        for r in range(m):
+            for c in range(n):
+                mat[r][c] = diagonals[r - c].pop()
+                
+        return mat
+
+
+9. 148 sort list
+
+class Solution:
+    def sortList(self, head: Optional[ListNode]) -> Optional[ListNode]:
+        if not head or not head.next:
+            return head
+        
+        # Count the total number of nodes
+        length = 0
+        curr = head
+        while curr:
+            length += 1
+            curr = curr.next
+            
+        dummy = ListNode(0)
+        dummy.next = head
+        
+        # Bottom-up merge sort with step sizes doubling each iteration
+        step = 1
+        while step < length:
+            prev = dummy
+            curr = dummy.next
+            
+            while curr:
+                # Extract the first sublist of size 'step'
+                left = curr
+                right = self.split(left, step)
+                # Keep track of the remaining unmerged list
+                curr = self.split(right, step)
+                
+                # Merge the two isolated sublists and attach to the main chain
+                merged = self.merge(left, right)
+                prev.next = merged[0]
+                prev = merged[1]
+                
+            step *= 2
+            
+        return dummy.next
+
+    def split(self, head: Optional[ListNode], step: int) -> Optional[ListNode]:
+        """Splits the list after 'step' nodes and returns the head of the remainder."""
+        if not head:
+            return None
+        
+        curr = head
+        # Advance by step - 1 to reach the tail node of this segment
+        for _ in range(step - 1):
+            if curr.next:
+                curr = curr.next
+            else:
+                break
+                
+        remainder = curr.next
+        curr.next = None  # Disconnect the segment
+        return remainder
+
+    def merge(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> tuple[Optional[ListNode], Optional[ListNode]]:
+        """Merges two sorted lists. Returns (merged_head, merged_tail)."""
+        dummy = ListNode(0)
+        tail = dummy
+        
+        while l1 and l2:
+            if l1.val < l2.val:
+                tail.next = l1
+                l1 = l1.next
+            else:
+                tail.next = l2
+                l2 = l2.next
+            tail = tail.next
+            
+        tail.next = l1 if l1 else l2
+        
+        # Traverse to find the new tail of the merged section
+        while tail.next:
+            tail = tail.next
+            
+        return dummy.next, tail
+
+
+10. 2091. Removing Minimum and Maximum From Array
+
+class Solution:
+    def minimumDeletions(self, nums: list[int]) -> int:
+        n = len(nums)
+        if n <= 2:
+            return n
+            
+        
+        min_idx = nums.index(min(nums))
+        max_idx = nums.index(max(nums))
+        
+      
+        i, j = min(min_idx, max_idx), max(max_idx, min_idx)
+        
+        
+        del_front = j + 1
+        
+     
+        del_back = n - i
+        
+       
+        del_both = (i + 1) + (n - j)
+        
+        return min(del_front, del_back, del_both)
+
