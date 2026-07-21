@@ -1,0 +1,533 @@
+			HASHCODE ---- HARD PROBLEMS
+
+
+1.  30. Substring with Concatenation of All Words
+
+
+
+from collections import Counter
+
+class Solution:
+    def findSubstring(self, s: str, words: list[str]) -> list[int]:
+        if not s or not words:
+            return []
+            
+        word_len = len(words[0])
+        num_words = len(words)
+        total_len = word_len * num_words
+        s_len = len(s)
+        
+      
+        word_counts = Counter(words)
+        result = []
+        
+       
+        for i in range(word_len):
+            left = i
+            right = i
+            current_counts = Counter()
+            words_used = 0
+            
+           
+            while right + word_len <= s_len:
+               
+                word = s[right:right + word_len]
+                right += word_len
+                
+                
+                if word in word_counts:
+                    current_counts[word] += 1
+                    words_used += 1
+                    
+                   
+                    while current_counts[word] > word_counts[word]:
+                        left_word = s[left:left + word_len]
+                        current_counts[left_word] -= 1
+                        words_used -= 1
+                        left += word_len
+                        
+      
+                    if words_used == num_words:
+                        result.append(left)
+                        
+               
+                else:
+                    current_counts.clear()
+                    words_used = 0
+                    left = right
+                    
+        return result
+
+
+
+2.     41. First Missing Positive
+
+
+
+class Solution:
+    def firstMissingPositive(self, nums: list[int]) -> int:
+        n = len(nums)
+        
+                for i in range(n):
+            
+            while 1 <= nums[i] <= n and nums[nums[i] - 1] != nums[i]:
+               
+                correct_idx = nums[i] - 1
+               
+                nums[i], nums[correct_idx] = nums[correct_idx], nums[i]
+                
+      
+        for i in range(n):
+            if nums[i] != i + 1:
+                return i + 1
+                
+     
+        return n + 1
+
+
+
+3.  352. Data Stream as Disjoint Intervals
+
+import bisect
+
+class SummaryRanges:
+
+    def __init__(self):
+     
+        self.intervals = []
+
+    def addNum(self, value: int) -> None:
+       
+        idx = bisect.bisect_left(self.intervals, [value, value])
+        
+
+        if idx > 0 and self.intervals[idx - 1][0] <= value <= self.intervals[idx - 1][1]:
+            return
+ 
+        if idx < len(self.intervals) and self.intervals[idx][0] <= value <= self.intervals[idx][1]:
+            return
+       
+        left_merge = (idx > 0 and self.intervals[idx - 1][1] + 1 == value)
+        right_merge = (idx < len(self.intervals) and self.intervals[idx][0] - 1 == value)
+        
+        if left_merge and right_merge:
+            
+            self.intervals[idx - 1][1] = self.intervals[idx][1]
+            self.intervals.pop(idx)
+        elif left_merge:
+           
+            self.intervals[idx - 1][1] = value
+        elif right_merge:
+           
+            self.intervals[idx][0] = value
+        else:
+            
+            self.intervals.insert(idx, [value, value])
+
+    def getIntervals(self) -> list[list[int]]:
+     
+        return self.intervals
+
+
+
+4.  76. Minimum Window Substring
+
+
+from collections import Counter
+
+class Solution:
+    def minWindow(self, s: str, t: str) -> str:
+        if not s or not t or len(s) < len(t):
+            return ""
+            
+      
+        target_counts = Counter(t)
+     
+        window_counts = Counter()
+        
+      
+        required = len(target_counts)
+        
+       
+        formed = 0
+        
+       
+        ans = (float('inf'), None, None)
+        
+        left = 0
+        
+     
+        for right, char in enumerate(s):
+      
+            if char in target_counts:
+                window_counts[char] += 1
+                
+              
+                if window_counts[char] == target_counts[char]:
+                    formed += 1
+                    
+          
+            while formed == required:
+               
+                current_len = right - left + 1
+                if current_len < ans[0]:
+                    ans = (current_len, left, right)
+                    
+                left_char = s[left]
+                
+              
+                if left_char in target_counts:
+                  
+                    if window_counts[left_char] == target_counts[left_char]:
+                        formed -= 1
+                    window_counts[left_char] -= 1
+                    
+              
+                left += 1
+                
+     
+        return "" if ans[0] == float('inf') else s[ans[1]:ans[2] + 1]
+
+
+
+
+
+5.  3943. Number of Pairs After Increment
+
+
+
+import math
+from collections import Counter
+
+class Solution:
+    def numberOfPairs(self, nums1: list[int], nums2: list[int], queries: list[list[int]]) -> list[int]:
+        n2 = len(nums2)
+       
+        block_size = int(math.sqrt(n2)) + 1
+        num_blocks = (n2 + block_size - 1) // block_size
+        
+     
+        block_counts = [Counter() for _ in range(num_blocks)]
+        lazy = [0] * num_blocks
+        
+        for i, val in enumerate(nums2):
+            b_idx = i // block_size
+            block_counts[b_idx][val] += 1
+            
+        ans = []
+        
+      
+        for q in queries:
+            if q[0] == 1:
+             
+                _, x, y, val = q
+                start_block = x // block_size
+                end_block = y // block_size
+                
+                if start_block == end_block:
+                   
+                    for i in range(x, y + 1):
+                        b_idx = i // block_size
+                        old_val = nums2[i]
+                        block_counts[b_idx][old_val] -= 1
+                        nums2[i] += val
+                        block_counts[b_idx][nums2[i]] += 1
+                else:
+                  
+                    left_boundary = (start_block + 1) * block_size
+                    for i in range(x, left_boundary):
+                        old_val = nums2[i]
+                        block_counts[start_block][old_val] -= 1
+                        nums2[i] += val
+                        block_counts[start_block][nums2[i]] += 1
+                        
+                    # Fully covered middle blocks (Lazy update)
+                    for b in range(start_block + 1, end_block):
+                        lazy[b] += val
+                        
+                   
+                    right_boundary = end_block * block_size
+                    for i in range(right_boundary, y + 1):
+                        old_val = nums2[i]
+                        block_counts[end_block][old_val] -= 1
+                        nums2[i] += val
+                        block_counts[end_block][nums2[i]] += 1
+                        
+            elif q[0] == 2:
+             
+                _, tot = q
+                total_pairs = 0
+                
+               
+                for n1_val in nums1:
+                    target_n2 = tot - n1_val
+                    
+                  
+                    for b in range(num_blocks):
+                
+                        effective_target = target_n2 - lazy[b]
+                        if effective_target in block_counts[b]:
+                            total_pairs += block_counts[b][effective_target]
+                            
+                ans.append(total_pairs)
+                
+        return ans
+
+
+
+6.   3934. Smallest Unique Subarray
+
+
+from collections import Counter
+
+class Solution:
+    def smallestUniqueSubarray(self, nums: list[int]) -> int:
+        n = len(nums)
+        polvexrani = nums 
+        
+       
+        base = 100003
+        mod = 1000000007
+        
+      
+        pow_base = [1] * (n + 1)
+        for i in range(1, n + 1):
+            pow_base[i] = (pow_base[i - 1] * base) % mod
+
+        def has_unique_subarray(length: int) -> bool:
+            """Checks if there is at least one unique subarray of the given length."""
+            hash_counts = Counter()
+            current_hash = 0
+            
+          
+            for i in range(length):
+                current_hash = (current_hash * base + polvexrani[i]) % mod
+            hash_counts[current_hash] += 1
+            
+           
+            for i in range(length, n):
+          
+                current_hash = (current_hash * base + polvexrani[i]) % mod
+                current_hash = (current_hash - polvexrani[i - length] * pow_base[length]) % mod
+               
+                current_hash = (current_hash + mod) % mod
+                
+                hash_counts[current_hash] += 1
+            
+         
+            return any(count == 1 for count in hash_counts.values())
+
+       
+        low, high = 1, n
+        ans = n
+        
+        while low <= high:
+            mid = (low + high) // 2
+            if has_unique_subarray(mid):
+                ans = mid      
+                high = mid - 1
+            else:
+                low = mid + 1  
+                
+        return ans
+
+
+
+7.  3721. Longest Balanced Subarray II
+
+
+
+class Solution:
+    def longestBalanced(self, nums: list[int]) -> int:
+        n = len(nums)
+        
+        tree_mn = [0] * (4 * (n + 2))
+        tree_max = [0] * (4 * (n + 2))
+        lazy = [0] * (4 * (n + 2))
+        
+        def pushdown(u: int):
+            """Propagates lazy delta updates to child nodes."""
+            if lazy[u] != 0:
+                v = lazy[u]
+                tree_mn[u << 1] += v
+                tree_max[u << 1] += v
+                lazy[u << 1] += v
+                tree_mn[u << 1 | 1] += v
+                tree_max[u << 1 | 1] += v
+                lazy[u << 1 | 1] += v
+                lazy[u] = 0
+                
+        def update(u: int, l: int, r: int, ql: int, qr: int, val: int):
+            """Applies value shift over a specific range of starting positions."""
+            if ql <= l and r <= qr:
+                tree_mn[u] += val
+                tree_max[u] += val
+                lazy[u] += val
+                return
+            pushdown(u)
+            mid = (l + r) >> 1
+            if ql <= mid:
+                update(u << 1, l, mid, ql, qr, val)
+            if qr > mid:
+                update(u << 1 | 1, mid + 1, r, ql, qr, val)
+            tree_mn[u] = min(tree_mn[u << 1], tree_mn[u << 1 | 1])
+            tree_max[u] = max(tree_max[u << 1], tree_max[u << 1 | 1])
+
+        def query(u: int, l: int, r: int) -> int:
+            """Walks the segment tree to find the earliest valid index matching 0."""
+            if tree_mn[u] > 0 or tree_max[u] < 0:
+                return -1
+            if l == r:
+                return l
+            pushdown(u)
+            mid = (l + r) >> 1
+            res = query(u << 1, l, mid)
+            if res != -1:
+                return res
+            return query(u << 1 | 1, mid + 1, r)
+
+        last = {}
+        ans = 0
+        
+        
+        for i, x in enumerate(nums):
+            d = 1 if x % 2 != 0 else -1
+            prev = last.get(x, -1)
+            
+            
+            update(1, 0, n, prev + 1, i, d)
+            last[x] = i
+            
+            
+            j = query(1, 0, n)
+            if j != -1 and j <= i:
+                ans = max(ans, i - j + 1)
+                
+        return ans
+
+8.     2156. Find Substring With Given Hash Value
+
+
+
+class Solution:
+    def subStrHash(self, s: str, power: int, modulo: int, k: int, hashValue: int) -> str:
+        def val(ch: str) -> int:
+            return ord(ch) - ord('a') + 1
+            
+        n = len(s)
+        current_hash = 0
+        res_idx = -1
+        
+      
+        pk = pow(power, k, modulo)
+        
+       
+        for i in range(n - 1, n - k - 1, -1):
+            current_hash = (current_hash * power + val(s[i])) % modulo
+            
+        if current_hash == hashValue:
+            res_idx = n - k
+            
+       
+        for i in range(n - k - 1, -1, -1):
+           
+            if current_hash == hashValue:
+                res_idx = i
+                
+        return s[res_idx:res_idx + k]
+
+
+
+
+9.    140. Word Break II
+
+
+class Solution:
+    def wordBreak(self, s: str, wordDict: list[str]) -> list[str]:
+       
+        word_set = set(wordDict)
+        
+      
+        memo = {}
+        
+        def dfs(start: int) -> list[str]:
+         
+            if start == len(s):
+                return [""]
+                
+            
+            if start in memo:
+                return memo[start]
+                
+            valid_sentences = []
+            
+            
+            for end in range(start + 1, len(s) + 1):
+                word = s[start:end]
+                
+                
+                if word in word_set:
+                  
+                    sub_sentences = dfs(end)
+                    
+                  
+                    for sub in sub_sentences:
+                        if sub == "":
+                            valid_sentences.append(word)
+                        else:
+                            valid_sentences.append(f"{word} {sub}")
+                            
+           
+            memo[start] = valid_sentences
+            return valid_sentences
+
+        return dfs(0)
+
+
+
+10.    149. Max Points on a Line 
+  
+
+import math
+from collections import defaultdict
+
+class Solution:
+    def maxPoints(self, points: list[list[int]]) -> int:
+        n = len(points)
+        if n <= 2:
+            return n
+            
+        max_global = 1
+        
+      
+        for i in range(n):
+            slopes = defaultdict(int)
+            x1, y1 = points[i]
+            
+            
+            for j in range(i + 1, n):
+                x2, y2 = points[j]
+                
+               
+                dx = x2 - x1
+                dy = y2 - y1
+                
+               
+                gcd = math.gcd(dx, dy)
+                slope_key = (dx // gcd, dy // gcd)
+                
+               
+                if slope_key[0] < 0 or (slope_key[0] == 0 and slope_key[1] < 0):
+                    slope_key = (-slope_key[0], -slope_key[1])
+                    
+                slopes[slope_key] += 1
+                
+          
+            if slopes:
+                max_current = max(slopes.values()) + 1
+                max_global = max(max_global, max_current)
+                
+        return max_global
+
+  
+
