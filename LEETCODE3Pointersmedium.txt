@@ -1,0 +1,350 @@
+                    Week 3 --- TWO POINTERS (MEDIUM PROBLEMS)
+
+
+1.     2. Add Two Numbers
+ 
+
+
+class Solution:
+    def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:
+        dummy_head = ListNode(0)
+        current = dummy_head
+        carry = 0
+        
+        while l1 or l2 or carry:
+            val1 = l1.val if l1 else 0
+            val2 = l2.val if l2 else 0
+            
+            total = val1 + val2 + carry
+            carry = total // 10
+            digit = total % 10
+            
+            current.next = ListNode(digit)
+            current = current.next
+            
+            if l1:
+                l1 = l1.next
+            if l2:
+                l2 = l2.next
+                
+        return dummy_head.next
+\
+
+
+2.     29. Divide Two Integers
+
+
+
+class Solution:
+    def divide(self, dividend: int, divisor: int) -> int:
+       
+        MAX_INT = 2147483647  
+        MIN_INT = -2147483648
+        
+        
+        if dividend == MIN_INT and divisor == -1:
+            return MAX_INT
+            
+      
+        negative = (dividend < 0) ^ (divisor < 0)
+        
+        
+        dividend = abs(dividend)
+        divisor = abs(divisor)
+        
+        quotient = 0
+        
+        
+        while dividend >= divisor:
+            temp_divisor = divisor
+            multiple = 1
+            
+            
+            while dividend >= (temp_divisor << 1):
+                temp_divisor <<= 1
+                multiple <<= 1
+                
+           
+            dividend -= temp_divisor
+            quotient += multiple
+            
+       
+        if negative:
+            quotient = -quotient
+            
+       
+        return max(MIN_INT, min(MAX_INT, quotient))
+
+
+
+
+
+3.      371. Sum of Two Integers
+
+
+
+
+class Solution:
+    def getSum(self, a: int, b: int) -> int:
+       
+        mask = 0xFFFFFFFF
+        
+        while b != 0:
+           
+            carry = (a & b) << 1
+            a = (a ^ b) & mask
+            b = carry & mask
+            
+       
+        return a if a <= 0x7FFFFFFF else ~(a ^ mask)
+
+
+
+
+4.          1073. Adding Two Negabinary Numbers
+
+
+class Solution:
+    def addNegabinary(self, arr1: list[int], arr2: list[int]) -> list[int]:
+        result = []
+        i = len(arr1) - 1
+        j = len(arr2) - 1
+        carry = 0
+        
+       
+        while i >= 0 or j >= 0 or carry != 0:
+            val1 = arr1[i] if i >= 0 else 0
+            val2 = arr2[j] if j >= 0 else 0
+            
+            
+            total = val1 + val2 + carry
+            
+           
+            remainder = total % 2
+            
+            carry = -(total // 2)
+            
+            result.append(remainder)
+            
+            i -= 1
+            j -= 1
+            
+        
+        result.reverse()
+        
+       
+        while len(result) > 1 and result[0] == 0:
+            result.pop(0)
+            
+        return result
+
+
+
+
+5.      4001. Aggregate Two Time Series
+
+
+
+class Solution:
+    def aggregateTimeSeries(self, series1: list[list[int]], series2: list[list[int]]) -> list[list[int]]:
+        i = len(series1) - 1
+        j = len(series2) - 1
+        
+        last_val1 = 0
+        last_val2 = 0
+        
+        result = []
+        
+        while i >= 0 or j >= 0:
+            t1 = series1[i][0] if i >= 0 else -1
+            t2 = series2[j][0] if j >= 0 else -1
+            
+            if t1 > t2:
+                last_val1 = series1[i][1]
+                current_time = t1
+                i -= 1
+            elif t2 > t1:
+                last_val2 = series2[j][1]
+                current_time = t2
+                j -= 1
+            else:
+                last_val1 = series1[i][1]
+                last_val2 = series2[j][1]
+                current_time = t1
+                i -= 1
+                j -= 1
+                
+            result.append([current_time, last_val1 + last_val2])
+            
+        result.reverse()
+        return result
+
+
+
+6.          3361. Shift Distance Between Two Strings
+
+
+
+class Solution:
+    def shiftDistance(self, s: str, t: str, nextCost: list[int], previousCost: list[int]) -> int:
+        n_pref = [0] * 53
+        p_pref = [0] * 53
+        
+        for i in range(52):
+            n_pref[i + 1] = n_pref[i] + nextCost[i % 26]
+            p_pref[i + 1] = p_pref[i] + previousCost[i % 26]
+            
+        total_cost = 0
+        
+        for c1, c2 in zip(s, t):
+            u = ord(c1) - 97
+            v = ord(c2) - 97
+            
+            if u == v:
+                continue
+                
+            forward_steps = v - u if v > u else v + 26 - u
+            cost_forward = n_pref[u + forward_steps] - n_pref[u]
+            
+            backward_steps = u - v if u > v else u + 26 - v
+            cost_backward = p_pref[v + backward_steps + 1] - p_pref[v + 1]
+            
+            total_cost += min(cost_forward, cost_backward)
+            
+        return total_cost
+
+
+
+7.          2131. Longest Palindrome by Concatenating Two Letter Words
+
+
+
+from collections import Counter
+
+class Solution:
+    def longestPalindrome(self, words: list[str]) -> int:
+        counts = Counter(words)
+        length = 0
+        has_central_pivot = False
+        
+        for word, count in counts.items():
+            if word[0] == word[1]:
+                if count % 2 == 0:
+                    length += count * 2
+                else:
+                    length += (count - 1) * 2
+                    has_central_pivot = True
+            else:
+                reversed_word = word[::-1]
+                if reversed_word in counts:
+                    pairs = min(count, counts[reversed_word])
+                    length += pairs * 2
+                    
+        if has_central_pivot:
+            length += 2
+            
+        return length
+
+
+
+8.          2359. Find Closest Node to Given Two Nodes
+
+
+
+
+class Solution:
+    def closestMeetingNode(self, edges: list[int], node1: int, node2: int) -> int:
+        n = len(edges)
+        
+        def get_distances(start_node: int) -> list[int]:
+            dist = [-1] * n
+            current_dist = 0
+            curr = start_node
+            while curr != -1 and dist[curr] == -1:
+                dist[curr] = current_dist
+                current_dist += 1
+                curr = edges[curr]
+            return dist
+
+        dist1 = get_distances(node1)
+        dist2 = get_distances(node2)
+        
+        min_max_dist = float('inf')
+        result_node = -1
+        
+        for i in range(n):
+            if dist1[i] != -1 and dist2[i] != -1:
+                max_dist = max(dist1[i], dist2[i])
+                if max_dist < min_max_dist:
+                    min_max_dist = max_dist
+                    result_node = i
+                    
+        return result_node
+
+
+
+9.      2771. Longest Non-decreasing Subarray From Two Arrays
+
+
+class Solution:
+    def maxNonDecreasingLength(self, nums1: list[int], nums2: list[int]) -> int:
+        n = len(nums1)
+        dp1 = 1
+        dp2 = 1
+        max_len = 1
+        
+        for i in range(1, n):
+            next_dp1 = 1
+            next_dp2 = 1
+            
+            if nums1[i] >= nums1[i - 1]:
+                next_dp1 = max(next_dp1, dp1 + 1)
+            if nums1[i] >= nums2[i - 1]:
+                next_dp1 = max(next_dp1, dp2 + 1)
+                
+            if nums2[i] >= nums1[i - 1]:
+                next_dp2 = max(next_dp2, dp1 + 1)
+            if nums2[i] >= nums2[i - 1]:
+                next_dp2 = max(next_dp2, dp2 + 1)
+                
+            dp1 = next_dp1
+            dp2 = next_dp2
+            max_len = max(max_len, dp1, dp2)
+            
+        return max_len
+
+
+
+10.         138. Copy List with Random Pointer
+
+
+
+class Solution:
+    def copyRandomList(self, head: 'Optional[Node]') -> 'Optional[Node]':
+        if not head:
+            return None
+            
+        curr = head
+        while curr:
+            new_node = Node(curr.val, curr.next)
+            curr.next = new_node
+            curr = new_node.next
+            
+        curr = head
+        while curr:
+            if curr.random:
+                curr.next.random = curr.random.next
+            curr = curr.next.next
+            
+        curr = head
+        new_head = head.next
+        while curr:
+            copy = curr.next
+            curr.next = copy.next
+            if copy.next:
+                copy.next = copy.next.next
+            curr = curr.next
+            
+        return new_head
+
+
