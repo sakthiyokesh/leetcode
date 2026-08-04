@@ -1,0 +1,120 @@
+			SLIDING WINDOW ----- MEDIUM PROBLEMS
+
+
+
+
+1. 464. Can I Win
+
+
+class Solution:
+    def canIWin(self, maxChoosableInteger: int, desiredTotal: int) -> bool:
+        # Edge case: If desired total is 0 or less, first player wins instantly
+        if desiredTotal <= 0:
+            return True
+            
+        # Edge case: If the sum of all numbers cannot reach the total, nobody can win
+        max_possible_sum = (maxChoosableInteger * (maxChoosableInteger + 1)) // 2
+        if max_possible_sum < desiredTotal:
+            return False
+            
+        # Memoization array using a bitmask as index. Max size is 2^20 (1,048,576 integers)
+        # -1 = unvisited, 0 = False (Lose), 1 = True (Win)
+        memo = [-1] * (1 << maxChoosableInteger)
+        
+        def dp(mask, current_total):
+            # If this pool combination state was already computed, return it
+            if memo[mask] != -1:
+                return memo[mask] == 1
+                
+            # Try choosing every available number
+            for i in range(1, maxChoosableInteger + 1):
+                # Check if the number 'i' has already been used (bit is set)
+                if (mask & (1 << (i - 1))) != 0:
+                    continue
+                    
+                # Option A: Current choice immediately crosses or matches the target total
+                if current_total + i >= desiredTotal:
+                    memo[mask] = 1
+                    return True
+                    
+                # Option B: Opponent is forced into a losing state on their next choice turn
+                next_mask = mask | (1 << (i - 1))
+                if not dp(next_mask, current_total + i):
+                    memo[mask] = 1
+                    return True
+                    
+            # If no choices lead to a winning strategy, current player loses this state branch
+            memo[mask] = 0
+            return False
+
+        return dp(0, 0)
+
+
+
+
+
+2. 	1823. Find the Winner of the Circular Game
+
+
+
+class Solution:
+    def findTheWinner(self, n: int, k: int) -> int:
+        winner = 0  # Base case: winner of 1 person game is at 0-index
+        
+        # Iteratively calculate the position for 2 up to n friends
+        for i in range(2, n + 1):
+            winner = (winner + k) % i
+            
+        # Convert 0-indexed position back to 1-indexed representation
+        return winner + 1
+
+
+
+3.  	1535. Find the Winner of an Array Game
+
+
+class Solution:
+    def getWinner(self, arr: list[int], k: int) -> int:
+        current_winner = arr[0]
+        streak = 0
+        
+        for i in range(1, len(arr)):
+            if arr[i] > current_winner:
+                current_winner = arr[i]
+                streak = 1
+            else:
+                streak += 1
+                
+            # Early exit if the current element reaches k consecutive wins
+            if streak == k:
+                return current_winner
+                
+        # If we loop through the entire array without hitting k wins,
+        # the current winner must be the absolute maximum element.
+        return current_winner
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
