@@ -1,0 +1,220 @@
+					leetcode(WEEK 4)  ----- SLIDING WINDOW (HARD)
+
+
+
+
+
+1.    239. Sliding Window Maximum
+
+
+
+
+
+from collections import deque
+
+class Solution:
+    def maxSlidingWindow(self, nums: list[int], k: int) -> list[int]:
+        result = []
+        q = deque() # Stores indices of elements
+        
+        for i in range(len(nums)):
+            # 1. Remove indices that are outside the current sliding window boundary
+            if q and q[0] < i - k + 1:
+                q.popleft()
+                
+            # 2. Remove indices of smaller elements since they are no longer useful
+            while q and nums[q[-1]] <= nums[i]:
+                q.pop()
+                
+            # 3. Add current index
+            q.append(i)
+            
+            # 4. Append maximum of current window to results
+            if i >= k - 1:
+                result.append(nums[q[0]])
+                
+        return result
+
+
+
+
+2.	480. Sliding Window Median
+
+
+
+
+import bisect
+
+class Solution:
+    def medianSlidingWindow(self, nums: list[int], k: int) -> list[float]:
+        window = sorted(nums[:k])
+        medians = []
+        
+        # Helper function to extract median from the currently sorted window
+        def get_median():
+            if k % 2 == 1:
+                return float(window[k // 2])
+            else:
+                return (window[k // 2 - 1] + window[k // 2]) / 2.0
+        
+        medians.append(get_median())
+        
+        # Slide the window across the remaining elements
+        for i in range(k, len(nums)):
+            # 1. Remove the element that is sliding out of the window frame
+            old_val = nums[i - k]
+            idx_to_remove = bisect.bisect_left(window, old_val)
+            window.pop(idx_to_remove)
+            
+            # 2. Add the new incoming element into its correct sorted position
+            new_val = nums[i]
+            bisect.insort(window, new_val)
+            
+            # 3. Calculate and append the new median
+            medians.append(get_median())
+            
+        return medians
+
+
+
+
+3. 
+
+
+class Solution:
+    def countWinningSequences(self, s: str) -> int:
+        MOD = 10**9 + 7
+        n = len(s)
+        
+        # Map string characters to numbers: F=0, W=1, E=2
+        mapping = {'F': 0, 'W': 1, 'E': 2}
+        alice_moves = [mapping[c] for c in s]
+        
+        # Helper function to compute the round score change for Bob
+        # Returns +1 if Bob wins, -1 if Alice wins, 0 if tie
+        def get_score_change(bob, alice):
+            if bob == alice:
+                return 0
+            if (bob == 0 and alice == 2) or (bob == 1 and alice == 0) or (bob == 2 and alice == 1):
+                return 1
+            return -1
+
+        # Memoization table
+        memo = {}
+
+        def dp(i, score_diff, last_move):
+            # Base Case: All rounds are processed
+            if i == n:
+                return 1 if score_diff > 0 else 0
+                
+            state = (i, score_diff, last_move)
+            if state in memo:
+                return memo[state]
+            
+            total_ways = 0
+            # Bob tries all 3 possible creature moves
+            for bob_move in range(3):
+                # Bob cannot make the same move twice in a row
+                if bob_move == last_move:
+                    continue
+                    
+                score_change = get_score_change(bob_move, alice_moves[i])
+                total_ways = (total_ways + dp(i + 1, score_diff + score_change, bob_move)) % MOD
+                
+            memo[state] = total_ways
+            return total_ways
+
+        # Start from round 0, with a score difference of 0, and no previous move (-1)
+        return dp(0, 0, -1)
+
+
+
+
+         
+
+
+
+4.  	3320. Count The Number of Winning Sequences
+
+
+
+class Solution:
+    def countWinningSequences(self, s: str) -> int:
+        MOD = 10**9 + 7
+        n = len(s)
+        
+        # Fast map string characters to numeric IDs: F=0, W=1, E=2
+        mapping = {'F': 0, 'W': 1, 'E': 2}
+        alice_moves = [mapping[c] for c in s]
+        
+        # Bob's scoring rule: Returns +1 for Bob win, -1 for Alice win, 0 for Tie
+        # lookup table to eliminate function call overhead inside loops
+        # matrix format: [bob_move][alice_move]
+        score_matrix = [
+            [0, -1, 1],  # Bob plays F (0) -> Ties F, Loses to W, Beats E
+            [1, 0, -1],  # Bob plays W (1) -> Beats F, Ties W, Loses to E
+            [-1, 1, 0]   # Bob plays E (2) -> Loses to F, Beats W, Ties E
+        ]
+
+        # Offset to prevent negative array indexing. Score ranges from -n to +n
+        OFFSET = n
+        
+        # 3D Array Memoization: shape [n][2*n + 1][4]
+        # last_move = 3 represents the starting state (no previous move)
+        memo = [[[-1] * 4 for _ in range(2 * n + 1)] for _ in range(n)]
+
+        def dp(i, score_diff, last_move):
+            # Base Case: All n rounds processed successfully
+            if i == n:
+                return 1 if score_diff > 0 else 0
+                
+            # Direct array lookup via offset
+            if memo[i][score_diff + OFFSET][last_move] != -1:
+                return memo[i][score_diff + OFFSET][last_move]
+            
+            total_ways = 0
+            alice = alice_moves[i]
+            
+            # Bob attempts choices 0, 1, and 2
+            for bob_move in range(3):
+                if bob_move == last_move:
+                    continue  # Violates consecutively unique rules
+                    
+                score_change = score_matrix[bob_move][alice]
+                total_ways += dp(i + 1, score_diff + score_change, bob_move)
+                
+            ans = total_ways % MOD
+            memo[i][score_diff + OFFSET][last_move] = ans
+            return ans
+
+        return dp(0, 0, 3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
