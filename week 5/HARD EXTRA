@@ -1,0 +1,325 @@
+
+
+
+                LEETCODE ---- STCAK HARD
+
+
+
+1.975. Odd Even Jump
+
+class Solution:
+    def oddEvenJumps(self, arr: list[int]) -> int:
+        n = len(arr)
+        if n <= 1:
+            return n
+            
+        # Helper function using a monotonic stack to find the next jump targets
+        def get_next_jumps(sorted_indices: list[int]) -> list[int]:
+            next_hop = [-1] * n
+            stack = []
+            for idx in sorted_indices:
+                while stack and stack[-1] < idx:
+                    next_hop[stack.pop()] = idx
+                stack.append(idx)
+            return next_hop
+
+        # 1. Precompute odd jump targets (smallest element >= arr[i])
+        # Sort by value ascending; tie-break by index ascending
+        odd_sorted = sorted(range(n), key=lambda x: (arr[x], x))
+        next_odd = get_next_jumps(odd_sorted)
+
+        # 2. Precompute even jump targets (largest element <= arr[i])
+        # Sort by value descending; tie-break by index ascending
+        even_sorted = sorted(range(n), key=lambda x: (-arr[x], x))
+        next_even = get_next_jumps(even_sorted)
+
+        # 3. Dynamic Programming from right to left
+        # odd_valid[i] means we can reach the end starting from index i with an odd jump
+        odd_valid = [False] * n
+        even_valid = [False] * n
+        
+        # Base case: The last index is always a valid destination
+        odd_valid[-1] = True
+        even_valid[-1] = True
+        
+        # Traverse backward to compute valid paths
+        for i in range(n - 2, -1, -1):
+            # If there is a valid odd jump, its status depends on the subsequent even jump status
+            if next_odd[i] != -1:
+                odd_valid[i] = even_valid[next_odd[i]]
+                
+            # If there is a valid even jump, its status depends on the subsequent odd jump status
+            if next_even[i] != -1:
+                even_valid[i] = odd_valid[next_even[i]]
+                
+        # Since the first jump is always odd-numbered, we count valid odd_valid entry points
+        return sum(odd_valid)
+
+
+2.770. Basic Calculator IV
+
+
+from collections import Counter
+import re
+
+class Poly(Counter):
+    """
+    Custom Counter subclass to handle symbolic polynomial algebra operations.
+    A polynomial is represented as: { (sorted_variables_tuple): coefficient }
+    """
+    def __add__(self, other):
+        res = Poly(self)
+        for term, coeff in other.items():
+            res[term] += coeff
+        return res
+        
+    def __sub__(self, other):
+        res = Poly(self)
+        for term, coeff in other.items():
+            res[term] -= coeff
+        return res
+        
+    def __mul__(self, other):
+        res = Poly()
+        for term1, coeff1 in self.items():
+            for term2, coeff2 in other.items():
+                # Multiply coefficients and combine/sort the variables
+                combined_term = tuple(sorted(term1 + term2))
+                res[combined_term] += coeff1 * coeff2
+        return res
+
+class Solution:
+    def binary_op(self, op: str, p1: Poly, p2: Poly) -> Poly:
+        if op == '+': return p1 + p2
+        if op == '-': return p1 - p2
+        if op == '*': return p1 * p2
+        return Poly()
+
+    def parse(self, tokens: list[str], i: int) -> tuple[Poly, int]:
+        """
+        Parses tokens starting at index i and returns (evaluated_polynomial, next_index).
+        Implements a standard operator-precedence / shunting-yard parsing approach.
+        """
+        ops = []
+        polys = []
+        
+        def compute_top_op():
+            op = ops.pop()
+            p2 = polys.pop()
+            p1 = polys.pop()
+            polys.append(self.binary_op(op, p1, p2))
+            
+        precedence = {'+': 1, '-': 1, '*': 2}
+        
+        while i < len(tokens):
+            token = tokens[i]
+            
+            if token == '(':
+                # Recursively parse nested expression inside parenthesis
+                p, next_i = self.parse(tokens, i + 1)
+                polys.append(p)
+                i = next_i
+            elif token == ')':
+                # End of current parenthesis level
+                while ops:
+                    compute_top_op()
+                return polys[0], i + 1
+            elif token in precedence:
+                # Process operators based on standard precedence rules
+                while ops and precedence[ops[-1]] >= precedence[token]:
+                    compute_top_op()
+                ops.append(token)
+                i += 1
+            else:
+                # Handle Operands: Variable or Integer literal
+                p = Poly()
+                if token.isalpha():
+                    if token in self.eval_map:
+                        p[()] = self.eval_map[token]  # Replaced by its integer value
+                    else:
+                        p[(token,)] = 1               # Free variable
+                else:
+                    p[()] = int(token)                # Integer constant
+                polys.append(p)
+                i += 1
+                
+        while ops:
+            compute_top_op()
+            
+        return polys[0], i
+
+    def convert_to_output(self, poly: Poly) -> list[str]:
+        """
+        Formats the Polynomial dict to the required LeetCode format list of strings.
+        """
+        # Filter out 0-coefficient terms
+        valid_terms = [item for item in poly.items() if item[1] != 0]
+        
+        # Sort terms criteria:
+        # 1. Highest degree first (-len(term))
+        # 2. Lexicographical order of variables (term)
+        valid_terms.sort(key=lambda x: (-len(x[0]), x[0]))
+        
+        res = []
+        for term, coeff in valid_terms:
+            if not term:
+                res.append(str(coeff))
+            else:
+                var_str = "*".join(term)
+                res.append(f"{coeff}*{var_str}")
+        return res
+
+    def find_all_tokens(self, expr: str) -> list[str]:
+        # Tokens can be alphabetic, numeric, or individual punctuation marks
+        return re.findall(r'[a-z]+|\d+|[+\-*()]', expr)
+
+    def main_solver(self, expression: str, evalvars: list[str], evalints: list[int]) -> list[str]:
+        # Map variables to known integers
+        self.eval_map = dict(zip(evalvars, evalints))
+        
+        # Tokenize the expression string cleanly
+        tokens = self.find_all_tokens(expression)
+        
+        # Parse the tokens into our custom Poly representation
+        final_poly, _ = self.parse(tokens, 0)
+        
+        # Structure and format the final output
+        return self.convert_to_output(final_poly)
+
+    # Alias to keep compliance with LeetCode's default call layout
+    def basicCalculatorIV(self, expression: str, evalvars: list[str], evalints: list[int]) -> list[str]:
+        return self.main_solver(expression, evalvars, evalints)
+
+
+
+3.768. Max Chunks To Make Sorted II
+
+
+class Solution:
+    def maxChunksToSorted(self, arr: list[int]) -> int:
+        n = len(arr)
+        
+        # Step 1: Precompute the minimum value from each position to the end of the array
+        # min_from_right[i] stores the minimum value in arr[i:]
+        min_from_right = [0] * n
+        min_seen = float('inf')
+        
+        for i in range(n - 1, -1, -1):
+            min_seen = min(min_seen, arr[i])
+            min_from_right[i] = min_seen
+            
+        chunks = 0
+        max_seen = float('-inf')
+        
+        # Step 2: Iterate forward and check where chunks can be split
+        for i in range(n - 1):
+            max_seen = max(max_seen, arr[i])
+            
+            # If the largest element in the current chunk is <= the smallest element
+            # remaining to its right, we can safely cut a chunk here.
+            if max_seen <= min_from_right[i + 1]:
+                chunks += 1
+                
+        # The final remaining portion of the array always forms the last chunk
+        return chunks + 1
+4.591. Tag Validator
+
+
+
+class Solution:
+    def isValid(self, code: str) -> bool:
+        stack = []
+        i = 0
+        n = len(code)
+        
+        while i < n:
+            # Rule 1 Check: Code must be completely wrapped in a single root tag.
+            if i > 0 and not stack:
+                return False
+            
+            # Case 1: CDATA block
+            if code.startswith("<![CDATA[", i):
+                if not stack:
+                    return False
+                j = code.find("]]>", i + 9)
+                if j == -1:
+                    return False
+                i = j + 3
+                
+            # Case 2: End Tag </TAG_NAME>
+            elif code.startswith("</", i):
+                j = code.find(">", i + 2)
+                if j == -1:
+                    return False
+                tag_name = code[i+2:j]
+                
+                # Check if tag matches the top of stack
+                if not stack or stack[-1] != tag_name:
+                    return False
+                stack.pop()
+                i = j + 1
+                
+            # Case 3: Start Tag <TAG_NAME>
+            elif code.startswith("<", i):
+                j = code.find(">", i + 1)
+                if j == -1:
+                    return False
+                tag_name = code[i+1:j]
+                
+                # FIX: Must be strictly uppercase letters (no special characters like '<' or numbers)
+                if not (1 <= len(tag_name) <= 9) or not tag_name.isupper() or not tag_name.isalpha():
+                    return False
+                
+                stack.append(tag_name)
+                i = j + 1
+                
+            # Case 4: Plain Text
+            else:
+                if not stack:
+                    return False
+                i += 1
+                
+        return len(stack) == 0
+5.1106. Parsing A Boolean Expression
+
+
+class Solution:
+    def parseBoolExpr(self, expression: str) -> bool:
+        stack = []
+        
+        for char in expression:
+            # Skip commas as they just separate values
+            if char == ',':
+                continue
+                
+            # If we hit a closing parenthesis, evaluate the sub-expression
+            if char == ')':
+                seen = set()
+                
+                # Gather all boolean values inside the current parenthesis
+                while stack[-1] != '(':
+                    seen.add(stack.pop())
+                
+                # Pop the opening parenthesis '('
+                stack.pop()
+                
+                # Pop the operator associated with this parenthesis
+                operator = stack.pop()
+                
+                # Evaluate based on the operator type
+                if operator == '!':
+                    # '!' always contains exactly one expression
+                    stack.append('t' if 'f' in seen else 'f')
+                elif operator == '&':
+                    # If 'f' is present anywhere, the AND result is false
+                    stack.append('f' if 'f' in seen else 't')
+                elif operator == '|':
+                    # If 't' is present anywhere, the OR result is true
+                    stack.append('t' if 't' in seen else 'f')
+            else:
+                # Push operators, open brackets, and 't'/'f' values to the stack
+                stack.append(char)
+                
+        return stack[0] == 't'
+
+
