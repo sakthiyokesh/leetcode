@@ -1,0 +1,342 @@
+                        LEETCODE (WEEK 5) -----------  STACK [MEDIUM PROBLMS] 
+
+
+
+1.          155. Min Stack
+ 
+
+
+
+class MinStack:
+
+    def __init__(self):
+        """
+        initializes the stack object.
+        """
+        self.stack = []
+
+    def push(self, val: int) -> None:
+        """
+        pushes the element val onto the stack.
+        """
+        if not self.stack:
+            # If stack is empty, the element itself is the minimum
+            self.stack.append((val, val))
+        else:
+            # Compare current value with the previous minimum
+            current_min = self.stack[-1][1]
+            self.stack.append((val, min(val, current_min)))
+
+    def pop(self) -> None:
+        """
+        removes the element on the top of the stack.
+        """
+        if self.stack:
+            self.stack.pop()
+
+    def top(self) -> int:
+        """
+        gets the top element of the stack.
+        """
+        return self.stack[-1][0]
+
+    def getMin(self) -> int:
+        """
+        retrieves the minimum element in the stack.
+        """
+        return self.stack[-1][1]
+
+
+# Your MinStack object will be instantiated and called as such:
+# obj = MinStack()
+# obj.push(val)
+# obj.pop()
+# param_3 = obj.top()
+# param_4 = obj.getMin()
+
+
+
+
+2.          946. Validate Stack Sequences
+         
+
+
+class Solution:
+    def validateStackSequences(self, pushed: list[int], popped: list[int]) -> bool:
+        stack = []
+        pop_index = 0
+        
+        for val in pushed:
+            stack.append(val)
+            # Check if the top of the stack matches the current element to pop
+            while stack and stack[-1] == popped[pop_index]:
+                stack.pop()
+                pop_index += 1
+                
+        # If the simulation was successful, the stack should be entirely empty
+        return len(stack) == 0
+
+
+
+
+
+
+
+3.          1381. Design a Stack With Increment Operation
+
+
+
+
+class CustomStack:
+
+    def __init__(self, maxSize: int):
+        self.maxSize = maxSize
+        self.stack = []
+        # Tracks pending increments for each index
+        self.inc_tracker = [0] * maxSize
+
+    def push(self, x: int) -> None:
+        # Only push if we haven't reached maximum capacity
+        if len(self.stack) < self.maxSize:
+            self.stack.append(x)
+
+    def pop(self) -> int:
+        if not self.stack:
+            return -1
+        
+        idx = len(self.stack) - 1
+        # Calculate the actual value by adding its pending increment
+        actual_val = self.stack.pop() + self.inc_tracker[idx]
+        
+        # Pass the increment downward to the next element if it exists
+        if idx > 0:
+            self.inc_tracker[idx - 1] += self.inc_tracker[idx]
+            
+        # Reset the current index tracker for future pushes
+        self.inc_tracker[idx] = 0
+        return actual_val
+
+    def increment(self, k: int, val: int) -> None:
+        # Determine the highest valid index that can be incremented
+        limit_idx = min(k, len(self.stack)) - 1
+        
+        # Store the increment lazily at the highest eligible boundary index
+        if limit_idx >= 0:
+            self.inc_tracker[limit_idx] += val
+
+
+4.          3693. Climbing Stairs II
+
+
+class Solution:
+    def climbStairs(self, n: int, costs: list[int]) -> int:
+        # dp[i] will store the minimum cost to reach step i
+        dp = [float('inf')] * (n + 1)
+        dp[0] = 0
+        
+        # Iterate through each step up to n
+        for i in range(1, n + 1):
+            cost_i = costs[i - 1]
+            
+            # Check jump from i - 1 (jump size = 1)
+            if i - 1 >= 0:
+                dp[i] = min(dp[i], dp[i - 1] + cost_i + 1)
+                
+            # Check jump from i - 2 (jump size = 2)
+            if i - 2 >= 0:
+                dp[i] = min(dp[i], dp[i - 2] + cost_i + 4)
+                
+            # Check jump from i - 3 (jump size = 3)
+            if i - 3 >= 0:
+                dp[i] = min(dp[i], dp[i - 3] + cost_i + 9)
+                
+        return dp[n]
+
+
+5.          988. Smallest String Starting From Leaf
+
+
+# Definition for a binary tree node.
+# class TreeNode:
+#     def __init__(self, val=0, left=None, right=None):
+#         self.val = val
+#         self.left = left
+#         self.right = right
+
+class Solution:
+    def smallestFromLeaf(self, root: Optional[TreeNode]) -> str:
+        self.smallest_string = "~"  # Initialize with a character larger than any lowercase letter
+        
+        def dfs(node: Optional[TreeNode], current_path: list[str]):
+            if not node:
+                return
+            
+            # Convert node value [0-25] to corresponding character ['a'-'z']
+            char = chr(ord('a') + node.val)
+            current_path.append(char)
+            
+            # Check if it's a leaf node
+            if not node.left and not node.right:
+                # Leaf-to-root string is the path reversed
+                candidate_str = "".join(reversed(current_path))
+                if candidate_str < self.smallest_string:
+                    self.smallest_string = candidate_str
+            else:
+                # Continue DFS down the tree
+                dfs(node.left, current_path)
+                dfs(node.right, current_path)
+                
+            # Backtrack to restore path state for the parent node
+            current_path.pop()
+
+        dfs(root, [])
+        return self.smallest_string
+
+
+
+
+6.      3084. Count Substrings Starting and Ending with Given Character
+
+
+
+
+class Solution:
+    def countSubstrings(self, s: str, c: str) -> int:
+        # Count total occurrences of character c in the string
+        count = s.count(c)
+        
+        # Calculate combinations of start and end positions
+        return (count * (count + 1)) // 2
+
+
+
+7.          2120. Execution of All Suffix Instructions Staying in a Grid
+
+
+class Solution:
+    def executeInstructions(self, n: int, startPos: list[int], s: str) -> list[int]:
+        m = len(s)
+        answer = [0] * m
+        
+        # Map each instruction character to its structural coordinate change (row_delta, col_delta)
+        moves = {
+            'L': (0, -1),
+            'R': (0, 1),
+            'U': (-1, 0),
+            'D': (1, 0)
+        }
+        
+        # Simulate starting from each suffix index i
+        for i in range(m):
+            curr_row, curr_col = startPos[0], startPos[1]
+            count = 0
+            
+            # Execute instructions sequentially from index i to the end
+            for j in range(i, m):
+                dr, dc = moves[s[j]]
+                curr_row += dr
+                curr_col += dc
+                
+                # Check if the robot has stepped outside the grid boundaries
+                if 0 <= curr_row < n and 0 <= curr_col < n:
+                    count += 1
+                else:
+                    break  # Stop immediately if it goes off the grid
+                    
+            answer[i] = count
+            
+        return answer
+
+
+
+
+8.          3728. Stable Subarrays With Equal Boundary and Interior Sum
+
+
+
+from collections import defaultdict
+
+class Solution:
+    def countStableSubarrays(self, capacity: list[int]) -> int:
+        ans = 0
+        prefix_sum = 0
+        
+        # Maps a value to a sub-dictionary of {prefix_sum_at_l: count}
+        # mp[val][pref_l] stores how many times prefix sum 'pref_l' occurred
+        # at previous indices where capacity[l] == val.
+        mp = defaultdict(lambda: defaultdict(int))
+        
+        # Array to store the prefix sum up to index i
+        n = len(capacity)
+        P = [0] * n
+        
+        current_sum = 0
+        for i in range(n):
+            current_sum += capacity[i]
+            P[i] = current_sum
+
+        for r in range(n):
+            val = capacity[r]
+            
+            # Formulate the target prefix sum P[l] we need to search for
+            target_pref = P[r] - 2 * val
+            
+            # If our map contains matching instances for this boundary value
+            if val in mp and target_pref in mp[val]:
+                ans += mp[val][target_pref]
+            
+            # Enforce length >= 3 constraint:
+            # The element at index (r - 1) can only act as 'l' when the current 
+            # right pointer moves to index (r + 1) or further. We safely add it now.
+            if r - 1 >= 0:
+                l_candidate = r - 1
+                val_l = capacity[l_candidate]
+                pref_l = P[l_candidate]
+                mp[val_l][pref_l] += 1
+                
+        return ans
+
+
+9.3084. Count Substrings Starting and Ending with Given Character
+
+
+
+
+class Solution:
+    def countSubstrings(self, s: str, c: str) -> int:
+        # Count how many times the character c appears in string s
+        count = s.count(c)
+        
+        # Apply the arithmetic formula for pairs (including single characters)
+        return (count * (count + 1)) // 2
+
+
+10.         3029. Minimum Time to Revert Word to Initial State I
+
+
+
+import math
+
+class Solution:
+    def minimumTimeToInitialState(self, word: str, k: str) -> int:
+        n = len(word)
+        
+        # Check every second (each step removes k characters)
+        for i in range(1, math.ceil(n / k) + 1):
+            # Calculate how many characters have been shifted out
+            shift = i * k
+            
+            # If we shifted past or exactly the full length, it takes i seconds
+            if shift >= n:
+                return i
+                
+            # If the remaining suffix matches the starting prefix, we can match the rest
+            if word[shift:] == word[:n - shift]:
+                return i
+                
+        return math.ceil(n / k)
+
+
+
+
+
