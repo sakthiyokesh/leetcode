@@ -1,0 +1,219 @@
+ 1.     98. Validate Binary Search Tree
+
+
+class Solution:
+    def isValidBST(self, root: TreeNode) -> bool:
+       
+        def validate(node, low, high):
+           
+            if not node:
+                return True
+            
+         
+            if not (low < node.val < high):
+                return False
+            
+            
+            return validate(node.left, low, node.val) and validate(node.right, node.val, high)
+        
+        
+        return validate(root, float('-inf'), float('inf'))
+
+
+
+
+2.      2476. Closest Nodes Queries in a Binary Search Tree
+
+
+import bisect
+from typing import List, Optional
+
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def closestNodes(self, root: Optional[TreeNode], queries: List[int]) -> List[List[int]]:
+        
+        sorted_vals = []
+        
+        def inorder(node):
+            if not node:
+                return
+            inorder(node.left)
+            sorted_vals.append(node.val)
+            inorder(node.right)
+            
+        inorder(root)
+        
+        ans = []
+        n = len(sorted_vals)
+        
+        
+        for q in queries:
+            
+            idx = bisect.bisect_left(sorted_vals, q)
+            
+            
+            if idx < n and sorted_vals[idx] == q:
+                ans.append([q, q])
+            else:
+               
+                mini = sorted_vals[idx - 1] if idx > 0 else -1
+               
+                maxi = sorted_vals[idx] if idx < n else -1
+                ans.append([mini, maxi])
+                
+        return ans
+
+3.      1932. Merge BSTs to Create Single BST
+
+
+from typing import List, Optional
+
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Solution:
+    def canMerge(self, trees: List[TreeNode]) -> Optional[TreeNode]:
+       
+        root_map = {tree.val: tree for tree in trees}
+        
+        
+        leaf_counts = {}
+        for tree in trees:
+            if tree.left:
+                leaf_counts[tree.left.val] = leaf_counts.get(tree.left.val, 0) + 1
+            if tree.right:
+                leaf_counts[tree.right.val] = leaf_counts.get(tree.right.val, 0) + 1
+                
+       
+        global_root = None
+        for tree in trees:
+            if tree.val not in leaf_counts:
+                if global_root is not None:
+                   
+                    return None
+                global_root = tree
+                
+        if not global_root:
+            return None
+            
+       
+        visited_nodes_count = 0
+        
+       
+        def traverse_and_validate(node, min_val, max_val):
+            nonlocal visited_nodes_count
+            if not node:
+                return True
+                
+           
+            if node.val <= min_val or node.val >= max_val:
+                return False
+                
+            visited_nodes_count += 1
+            
+            
+            if not node.left and not node.right and node.val in root_map and node != global_root:
+                matching_root = root_map[node.val]
+                node.left = matching_root.left
+                node.right = matching_root.right
+               
+                del root_map[node.val]
+                
+          
+            return (traverse_and_validate(node.left, min_val, node.val) and 
+                    traverse_and_validate(node.right, node.val, max_val))
+                    
+       
+        if traverse_and_validate(global_root, float('-inf'), float('inf')):
+          
+            total_expected_nodes = sum(1 + (1 if t.left else 0) + (1 if t.right else 0) for t in trees)
+            
+            unique_nodes_count = total_expected_nodes - (len(trees) - 1)
+            
+            
+            if visited_nodes_count == unique_nodes_count:
+                return global_root
+                
+        return None
+
+
+
+4.          1382. Balance a Binary Search Tree
+
+
+
+from typing import List, Optional
+
+
+
+class Solution:
+    def balanceBST(self, root: TreeNode) -> TreeNode:
+        
+        sorted_vals = []
+        
+        def inorder(node):
+            if not node:
+                return
+            inorder(node.left)
+            sorted_vals.append(node.val)
+            inorder(node.right)
+            
+        inorder(root)
+        
+      
+        def build_balanced_bst(left: int, right: int) -> Optional[TreeNode]:
+            if left > right:
+                return None
+            
+        
+            mid = (left + right) // 2
+            
+            
+            node = TreeNode(sorted_vals[mid])
+            
+          
+            node.left = build_balanced_bst(left, mid - 1)
+            node.right = build_balanced_bst(mid + 1, right)
+            
+            return node
+            
+        return build_balanced_bst(0, len(sorted_vals) - 1)
+
+
+
+6.          1038. Binary Search Tree to Greater Sum Tree
+
+
+
+class Solution:
+    def bstToGst(self, root: TreeNode) -> TreeNode:
+       
+        self.running_sum = 0
+        
+        def reverse_inorder(node):
+            if not node:
+                return
+            
+           
+            reverse_inorder(node.right)
+            
+           
+            self.running_sum += node.val
+            node.val = self.running_sum
+            
+           
+            reverse_inorder(node.left)
+            
+        reverse_inorder(root)
+        return root
+
