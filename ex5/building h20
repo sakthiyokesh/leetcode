@@ -1,0 +1,57 @@
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+
+class H2O {
+private:
+    std::mutex mtx;
+    std::condition_variable cv;
+    int h; // Counter for Hydrogen threads in the current batch
+    int o; // Counter for Oxygen threads in the current batch
+
+public:
+    H2O() {
+        h = 0;
+        o = 0;
+    }
+
+    void hydrogen(std::function<void()> releaseHydrogen) {
+        std::unique_lock<std::mutex> lock(mtx);
+        
+        // Wait until there is a free Hydrogen slot in the current batch
+        cv.wait(lock, [this]() { return h < 2; });
+        
+        // releaseHydrogen() outputs "H". Do not change or remove this line.
+        releaseHydrogen();
+        h++;
+        
+        // If the complete molecule (2H + 1O) is formed, reset for the next batch
+        if (h == 2 && o == 1) {
+            h = 0;
+            o = 0;
+        }
+        
+        // Notify other waiting threads
+        cv.notify_all();
+    }
+
+    void oxygen(std::function<void()> releaseOxygen) {
+        std::unique_lock<std::mutex> lock(mtx);
+        
+        // Wait until there is a free Oxygen slot in the current batch
+        cv.wait(lock, [this]() { return o < 1; });
+        
+        // releaseOxygen() outputs "O". Do not change or remove this line.
+        releaseOxygen();
+        o++;
+        
+        // If the complete molecule (2H + 1O) is formed, reset for the next batch
+        if (h == 2 && o == 1) {
+            h = 0;
+            o = 0;
+        }
+        
+        // Notify other waiting threads
+        cv.notify_all();
+    }
+};
